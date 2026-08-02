@@ -1,0 +1,15 @@
+# Secrets
+.env
+
+# Persistent application state and API keys
+config/
+
+# Downloads and media
+data/
+
+# Local backups
+backups/
+
+# Logs and temporary files
+*.log
+*.tmp
