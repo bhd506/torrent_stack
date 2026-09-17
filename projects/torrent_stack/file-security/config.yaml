@@ -1,0 +1,31 @@
+version: 1
+
+runtime:
+  debounce: 150ms
+  workerThreads: 4
+
+statusApi:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8080
+
+# FileSecurityManager sees completed TV files under /data/tv and completed
+# movie files under /data/movies. Incomplete qBittorrent downloads are not
+# mounted into this container. This is a conservative baseline policy from the
+# integration guide; replace/extend it with the policy you actually want.
+ruleSets:
+  - path: "."
+    override: false
+    rules:
+      - predefined:
+          type: blockExtensions
+          extensions:
+            - exe
+            - dll
+            - bat
+            - cmd
+            - ps1
+            - sh
+            - jar
+          onMatch:
+            - delete
