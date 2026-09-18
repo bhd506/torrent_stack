@@ -101,7 +101,8 @@ services:
       - "${PGID}"
     volumes:
       - ./config/file-security/config.yaml:/etc/file-security/config.yaml:ro
-      - ./data:/data
+      - ./data/downloads/tv:/data/tv
+      - ./data/downloads/movies:/data/movies
       - file-security-quarantine:/quarantine
       - file-security-logs:/logs
       - file-security-mirrors:/mirrors
