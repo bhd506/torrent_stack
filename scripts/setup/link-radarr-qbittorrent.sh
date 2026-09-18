@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ENV_FILE="${ENV_FILE:-$PROJECT_ROOT/.env}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -16,7 +16,7 @@ source "$ENV_FILE"
 set +a
 
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 for command_name in curl jq; do
     command -v "$command_name" >/dev/null 2>&1 || {
@@ -30,7 +30,7 @@ QBITTORRENT_PASSWORD="${QBITTORRENT_PASSWORD:-}"
 
 RADARR_URL="${RADARR_URL:-http://127.0.0.1:7878}"
 RADARR_URL="${RADARR_URL%/}"
-RADARR_CONFIG_FILE="${RADARR_CONFIG_FILE:-$PROJECT_ROOT/config/radarr/config.xml}"
+RADARR_CONFIG_FILE="${RADARR_CONFIG_FILE:-$PROJECT_ROOT/state/radarr/config.xml}"
 
 QBITTORRENT_HOST="${QBITTORRENT_HOST:-gluetun}"
 QBITTORRENT_WEBUI_PORT="${QBITTORRENT_WEBUI_PORT:-8080}"

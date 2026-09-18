@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ENV_FILE="${ENV_FILE:-$PROJECT_ROOT/.env}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -16,7 +16,7 @@ source "$ENV_FILE"
 set +a
 
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 for command_name in curl docker sed; do
     command -v "$command_name" >/dev/null 2>&1 || {
@@ -37,9 +37,9 @@ PROWLARR_URL="${PROWLARR_URL:-http://127.0.0.1:9696}"
 QBITTORRENT_URL="${QBITTORRENT_URL:-http://127.0.0.1:${WEBUI_PORT:-8080}}"
 FILE_SECURITY_HOST_URL="${FILE_SECURITY_HOST_URL:-http://127.0.0.1:${FILE_SECURITY_HOST_PORT:-8081}}"
 
-SONARR_CONFIG_FILE="${SONARR_CONFIG_FILE:-$PROJECT_ROOT/config/sonarr/config.xml}"
-RADARR_CONFIG_FILE="${RADARR_CONFIG_FILE:-$PROJECT_ROOT/config/radarr/config.xml}"
-PROWLARR_CONFIG_FILE="${PROWLARR_CONFIG_FILE:-$PROJECT_ROOT/config/prowlarr/config.xml}"
+SONARR_CONFIG_FILE="${SONARR_CONFIG_FILE:-$PROJECT_ROOT/state/sonarr/config.xml}"
+RADARR_CONFIG_FILE="${RADARR_CONFIG_FILE:-$PROJECT_ROOT/state/radarr/config.xml}"
+PROWLARR_CONFIG_FILE="${PROWLARR_CONFIG_FILE:-$PROJECT_ROOT/state/prowlarr/config.xml}"
 
 declare -A ready=(
     [sonarr]=false

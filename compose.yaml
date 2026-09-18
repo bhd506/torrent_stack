@@ -1,49 +1,48 @@
+x-linuxserver-environment: &linuxserver-environment
+  PUID: "${PUID}"
+  PGID: "${PGID}"
+  TZ: "${TZ}"
+  UMASK: "${UMASK:-002}"
+
 services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
-
     environment:
-      PUID: "${PUID}"
-      PGID: "${PGID}"
-      TZ: "${TZ}"
-      UMASK: "${UMASK:-002}"
-
+      <<: *linuxserver-environment
     volumes:
-      - ./config/sonarr:/config
+      - ./state/sonarr:/config
       - ./data:/data
-
     ports:
       - "8989:8989"
-
     restart: unless-stopped
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
-
     environment:
-      PUID: "${PUID}"
-      PGID: "${PGID}"
-      TZ: "${TZ}"
-      UMASK: "${UMASK:-002}"
-
+      <<: *linuxserver-environment
     volumes:
-      - ./config/radarr:/config
+      - ./state/radarr:/config
       - ./data:/data
-
     ports:
       - "7878:7878"
+    restart: unless-stopped
 
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    environment:
+      <<: *linuxserver-environment
+    volumes:
+      - ./state/prowlarr:/config
+    ports:
+      - "9696:9696"
     restart: unless-stopped
 
   gluetun:
     image: qmcgaw/gluetun:latest
-
     cap_add:
       - NET_ADMIN
-
     devices:
       - /dev/net/tun:/dev/net/tun
-
     environment:
       TZ: "${TZ}"
       VPN_SERVICE_PROVIDER: "private internet access"
@@ -56,10 +55,8 @@ services:
       VPN_PORT_FORWARDING: "${PIA_VPN_PORT_FORWARDING:-on}"
       FIREWALL_INPUT_PORTS: "8080"
 
-      # When PIA assigns a forwarded port, keep qBittorrent's listening port in
-      # sync. qBittorrent shares Gluetun's network namespace, so localhost is
-      # the correct address here. Localhost authentication bypass is enabled by
-      # scripts/configure-qbittorrent.sh solely for this hook.
+      # qBittorrent shares Gluetun's network namespace. Keep its incoming
+      # torrent port synchronized with PIA's dynamically assigned forwarded port.
       VPN_PORT_FORWARDING_UP_COMMAND: >-
         /bin/sh -c 'wget -O /dev/null -q --retry-connrefused
         --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}"
@@ -68,102 +65,61 @@ services:
         /bin/sh -c 'wget -O /dev/null -q --retry-connrefused
         --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}"
         http://127.0.0.1:8080/api/v2/app/setPreferences'
-
     volumes:
-      - ./config/gluetun:/gluetun
-
-    # qBittorrent has no ports or independent Docker network of its own. The
-    # WebUI is deliberately published through Gluetun instead. Torrent peer
-    # traffic exits through the VPN interface and the VPN provider's forwarded
-    # port, not a host-side Docker mapping.
+      # Gluetun legitimately needs elevated networking privileges. Keep its
+      # writable state in Docker-managed storage so it cannot create root-owned
+      # files inside the project checkout.
+      - gluetun-state:/gluetun
     ports:
+      # qBittorrent's WebUI is published through Gluetun; qBittorrent itself
+      # deliberately has no host ports and no independent Docker network.
       - "8080:8080"
-
     restart: unless-stopped
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
-
     network_mode: "service:gluetun"
-
     depends_on:
       - gluetun
-
     environment:
-      PUID: "${PUID}"
-      PGID: "${PGID}"
-      TZ: "${TZ}"
-      UMASK: "${UMASK:-002}"
+      <<: *linuxserver-environment
       WEBUI_PORT: "8080"
       TORRENTING_PORT: "${QBITTORRENT_TORRENT_PORT:-6881}"
-
     volumes:
-      - ./config/qbittorrent:/config
+      - ./state/qbittorrent:/config
       - ./data:/data
-
     stop_grace_period: 10s
-    restart: unless-stopped
-
-  prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
-
-    environment:
-      PUID: "${PUID}"
-      PGID: "${PGID}"
-      TZ: "${TZ}"
-
-    volumes:
-      - ./config/prowlarr:/config
-
-    ports:
-      - "9696:9696"
-
     restart: unless-stopped
 
   file-security:
     image: ghcr.io/haydeproductions/file-security-manager:0.1.0
     restart: unless-stopped
-
-    # FileSecurityManager itself runs as UID/GID 10001. qBittorrent creates
-    # completed downloads using PGID and a group-writable umask, so granting
-    # that PGID as a supplementary group lets the security service remove or
-    # quarantine files without changing its image user.
+    # The image runs as UID/GID 10001. Supplementary PGID plus setgid/group-
+    # writable download directories lets it quarantine/remove completed files
+    # without changing the image user or making project files root-owned.
     group_add:
       - "${PGID}"
-
     volumes:
-      - ./file-security/config.yaml:/etc/file-security/config.yaml:ro
-      # Mount only completed Sonarr/Radarr trees. Incomplete downloads are not
-      # exposed to FileSecurityManager.
+      - ./config/file-security/config.yaml:/etc/file-security/config.yaml:ro
       - ./data/downloads/tv:/data/tv
       - ./data/downloads/movies:/data/movies
       - file-security-quarantine:/quarantine
       - file-security-logs:/logs
       - file-security-mirrors:/mirrors
-
-    # qBittorrent already occupies host port 8080. Keep FileSecurityManager's
-    # host-side test endpoint local-only on 8081; containers use port 8080.
     ports:
       - "127.0.0.1:${FILE_SECURITY_HOST_PORT:-8081}:8080"
 
   coordinator:
-    # The coordinator is intentionally profile-gated so a plain `docker compose up`
-    # cannot start imports before first-run configuration has completed. `run.sh`
-    # explicitly starts this service only after all configuration verifies.
     profiles: ["runtime"]
-
     build:
-      context: ./coordinator
-    restart: unless-stopped
+      context: ./services/coordinator
     user: "${PUID}:${PGID}"
-
     depends_on:
       - sonarr
       - radarr
       - qbittorrent
       - gluetun
       - file-security
-
     environment:
       QBITTORRENT_URL: "http://gluetun:8080"
       QBITTORRENT_USERNAME: "${QBITTORRENT_USERNAME}"
@@ -192,14 +148,15 @@ services:
       COORDINATOR_HTTP_TIMEOUT_SECONDS: "${COORDINATOR_HTTP_TIMEOUT_SECONDS:-20}"
       QBITTORRENT_AUTH_RETRY_SECONDS: "${QBITTORRENT_AUTH_RETRY_SECONDS:-300}"
       COORDINATOR_DRY_RUN: "${COORDINATOR_DRY_RUN:-false}"
-
     volumes:
-      - ./config/sonarr:/sonarr-config:ro
-      - ./config/radarr:/radarr-config:ro
+      - ./state/sonarr:/sonarr-config:ro
+      - ./state/radarr:/radarr-config:ro
       - ./data/downloads:/downloads:ro
-      - ./runtime/coordinator:/state
+      - ./state/coordinator:/state
+    restart: unless-stopped
 
 volumes:
+  gluetun-state:
   file-security-quarantine:
   file-security-logs:
   file-security-mirrors:

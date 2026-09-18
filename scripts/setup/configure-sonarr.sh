@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ENV_FILE="${ENV_FILE:-$PROJECT_ROOT/.env}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -16,7 +16,7 @@ source "$ENV_FILE"
 set +a
 
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 for command_name in curl docker jq sed; do
     command -v "$command_name" >/dev/null 2>&1 || {
@@ -31,7 +31,7 @@ done
 SONARR_SERVICE="${SONARR_SERVICE:-sonarr}"
 SONARR_URL="${SONARR_URL:-http://127.0.0.1:8989}"
 SONARR_URL="${SONARR_URL%/}"
-SONARR_CONFIG_FILE="${SONARR_CONFIG_FILE:-$PROJECT_ROOT/config/sonarr/config.xml}"
+SONARR_CONFIG_FILE="${SONARR_CONFIG_FILE:-$PROJECT_ROOT/state/sonarr/config.xml}"
 SONARR_WAIT_SECONDS="${SONARR_WAIT_SECONDS:-${STACK_SERVICE_WAIT_SECONDS:-120}}"
 ROOT_FOLDER="${SONARR_ROOT_FOLDER:-/data/media/tv}"
 

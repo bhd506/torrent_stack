@@ -2,25 +2,25 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 CONFIGURATION_SCRIPTS=(
     # qBittorrent first: fresh installs may have a temporary WebUI password and
     # the *arr download-client tests depend on its permanent credentials.
-    "scripts/configure-qbittorrent.sh"
-    "scripts/configure-sonarr.sh"
-    "scripts/configure-radarr.sh"
-    "scripts/configure-prowlarr.sh"
-    "scripts/link-sonarr-qbittorrent.sh"
-    "scripts/link-radarr-qbittorrent.sh"
-    "scripts/link-prowlarr-sonarr.sh"
-    "scripts/link-prowlarr-radarr.sh"
-    "scripts/configure-prowlarr-indexers.sh"
+    "scripts/setup/configure-qbittorrent.sh"
+    "scripts/setup/configure-sonarr.sh"
+    "scripts/setup/configure-radarr.sh"
+    "scripts/setup/configure-prowlarr.sh"
+    "scripts/setup/link-sonarr-qbittorrent.sh"
+    "scripts/setup/link-radarr-qbittorrent.sh"
+    "scripts/setup/link-prowlarr-sonarr.sh"
+    "scripts/setup/link-prowlarr-radarr.sh"
+    "scripts/setup/configure-prowlarr-indexers.sh"
 )
 
 echo "Checking configuration scripts..."
-for script in "scripts/wait-for-services.sh" "${CONFIGURATION_SCRIPTS[@]}"; do
+for script in "scripts/verify/wait-for-services.sh" "${CONFIGURATION_SCRIPTS[@]}"; do
     if [[ ! -f "$script" ]]; then
         echo "Error: required script not found: $script" >&2
         exit 1
@@ -32,7 +32,7 @@ done
 echo "Ensuring base services are started..."
 docker compose up -d gluetun sonarr radarr qbittorrent prowlarr file-security
 
-bash scripts/wait-for-services.sh
+bash scripts/verify/wait-for-services.sh
 
 for script in "${CONFIGURATION_SCRIPTS[@]}"; do
     echo

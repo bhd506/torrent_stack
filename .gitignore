@@ -1,8 +1,8 @@
 # Secrets
 .env
 
-# Persistent application state and API keys
-config/
+# Generated service/runtime state
+state/
 
 # Downloads and media
 data/
@@ -13,9 +13,6 @@ backups/
 # Logs and temporary files
 *.log
 *.tmp
-
-# Coordinator runtime state
-runtime/
 
 # Python local test artifacts
 __pycache__/

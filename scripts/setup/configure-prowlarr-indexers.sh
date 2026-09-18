@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ENV_FILE="${ENV_FILE:-$PROJECT_ROOT/.env}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -16,7 +16,7 @@ source "$ENV_FILE"
 set +a
 
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/../lib/common.sh"
 
 for command_name in curl jq; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -28,7 +28,7 @@ done
 PROWLARR_URL="${PROWLARR_URL:-http://127.0.0.1:9696}"
 PROWLARR_URL="${PROWLARR_URL%/}"
 
-PROWLARR_CONFIG_FILE="${PROWLARR_CONFIG_FILE:-$PROJECT_ROOT/config/prowlarr/config.xml}"
+PROWLARR_CONFIG_FILE="${PROWLARR_CONFIG_FILE:-$PROJECT_ROOT/state/prowlarr/config.xml}"
 PROWLARR_WAIT_SECONDS="${PROWLARR_WAIT_SECONDS:-120}"
 INDEXER_PRIORITY="${INDEXER_PRIORITY:-25}"
 
